@@ -1,0 +1,55 @@
+# === Секреты ===
+.env
+.env.local
+.env.production
+*.env
+server/config/gcp-key.json
+
+# === Node ===
+node_modules/
+.next/
+.turbo/
+dist/
+
+# === Python ===
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# === Базы данных ===
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# === IDE ===
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === Скриншоты (необязательны в репе) ===
+*.png
+
+# === Playwright MCP ===
+.playwright-mcp/
+
+# === Claude ===
+.claude/
+
+# === Remember ===
+.remember/
+
+# === Android SDK (отдельная репа) ===
+android-sdk/
+
+# === Build artifacts ===
+build/
+.gradle/
