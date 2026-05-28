@@ -71,18 +71,25 @@ async def gateway(request: Request):
         headers=headers,
     )
 
-    offers = config_store.offers
+    package_name = headers.get("x-package-name", "")
+    app = config_store.get_app(package_name) if package_name else None
+
+    if app and app.panic_mode:
+        return RedirectResponse(url=app.safe_url, status_code=302)
+
+    target_url = app.target_url if app else config_store.offers.targetUrl
+    safe_url = app.safe_url if app else config_store.offers.safeUrl
+    flow = app.white_flow_type if app else config_store.offers.whiteFlowType
 
     if result.verdict == "grey":
-        return RedirectResponse(url=offers.targetUrl, status_code=302)
+        return RedirectResponse(url=target_url, status_code=302)
 
-    flow = offers.whiteFlowType
     if flow == "show_403":
         return JSONResponse(status_code=403, content={"error": "Forbidden"})
     elif flow == "show_404":
         return JSONResponse(status_code=404, content={"error": "Not Found"})
     elif flow == "redirect_safe":
-        return RedirectResponse(url=offers.safeUrl, status_code=302)
+        return RedirectResponse(url=safe_url, status_code=302)
     elif flow == "fake_html":
         return HTMLResponse(content=FAKE_HTML, status_code=200)
 
@@ -127,11 +134,17 @@ async def score_debug(request: Request):
         headers=headers,
     )
 
+    package_name = headers.get("x-package-name", "")
+    app = config_store.get_app(package_name) if package_name else None
+    target_url = app.target_url if app else config_store.offers.targetUrl
+    safe_url = app.safe_url if app else config_store.offers.safeUrl
+
     return {
         "ip": ip,
         "score": result.score,
         "threshold": config_store.engine.scoreThreshold,
         "verdict": result.verdict,
         "rejectionCode": result.rejectionCode,
+        "targetUrl": target_url if result.verdict == "grey" else safe_url,
         "details": [d.model_dump() for d in result.details],
     }

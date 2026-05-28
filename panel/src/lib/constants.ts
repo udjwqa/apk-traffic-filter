@@ -1,0 +1,33 @@
+export const COUNTRIES = [
+  { name: "Россия", code: "RU" },
+  { name: "Украина", code: "UA" },
+  { name: "Казахстан", code: "KZ" },
+  { name: "Беларусь", code: "BY" },
+  { name: "Узбекистан", code: "UZ" },
+  { name: "Германия", code: "DE" },
+  { name: "Турция", code: "TR" },
+  { name: "Польша", code: "PL" },
+  { name: "США", code: "US" },
+  { name: "Индия", code: "IN" },
+];
+
+export const REJECTION_CODES: { code: string; label: string }[] = [
+  { code: "no_client_secret", label: "Нет клиентского секрета" },
+  { code: "bot_user_agent", label: "Бот User-Agent" },
+  { code: "device_blocked", label: "Устройство заблокировано" },
+  { code: "emulator_detected", label: "Эмулятор обнаружен" },
+  { code: "emulator_gpu", label: "GPU эмулятора" },
+  { code: "test_build_detected", label: "Тестовая сборка" },
+  { code: "country_blocked", label: "Страна заблокирована" },
+  { code: "asn_blocked", label: "ASN датацентра" },
+  { code: "ip_range_blocked", label: "IP в диапазоне ботов" },
+  { code: "vpn_detected", label: "VPN обнаружен" },
+  { code: "proxy_detected", label: "Proxy обнаружен" },
+  { code: "suspicious_hosting", label: "Подозрительный хостинг" },
+  { code: "honeypot", label: "Honeypot ловушка" },
+  { code: "integrity_invalid", label: "Play Integrity невалиден" },
+  { code: "device_compromised", label: "Устройство скомпрометировано" },
+  { code: "app_tampered", label: "APK модифицирован" },
+  { code: "cert_mismatch", label: "Сертификат не совпадает" },
+  { code: "behavioral_score", label: "Поведенческий скоринг" },
+];

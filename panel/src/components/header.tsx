@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   DropdownMenu,
@@ -34,6 +35,7 @@ interface HeaderProps {
     name?: string | null;
     email?: string | null;
   };
+  onToggleSidebar?: () => void;
 }
 
 // TODO(backend): Replace with real status polling
@@ -51,7 +53,8 @@ function usePanicMode() {
   return { active, toggle };
 }
 
-export function Header({ user }: HeaderProps) {
+export function Header({ user, onToggleSidebar }: HeaderProps) {
+  const router = useRouter();
   const initials = user.name
     ? user.name
         .split(" ")
@@ -69,6 +72,15 @@ export function Header({ user }: HeaderProps) {
       <header className="sticky top-0 z-20 px-6 py-3">
         <div className="flex h-12 items-center justify-between rounded-2xl border border-white/[0.06] bg-[oklch(0.11_0_0)] px-4 backdrop-blur-xl">
           <div className="flex items-center gap-4">
+            {/* Mobile menu button */}
+            <button
+              onClick={onToggleSidebar}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-white/50 hover:bg-white/[0.05] hover:text-white md:hidden"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
             {/* Status indicators */}
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5" title="Cloudflare Worker: Connected">
@@ -153,13 +165,16 @@ export function Header({ user }: HeaderProps) {
                   <p className="text-xs text-white/40">{user.email}</p>
                 </div>
                 <DropdownMenuSeparator className="bg-white/[0.06]" />
-                <DropdownMenuItem className="gap-2 rounded-lg text-white/60 focus:bg-white/[0.05] focus:text-white/80">
+                <DropdownMenuItem
+                  onClick={() => router.push("/dashboard/profile")}
+                  className="gap-2 rounded-lg text-white/60 focus:bg-white/[0.05] focus:text-white/80"
+                >
                   <User className="h-4 w-4" />
                   Профиль
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-white/[0.06]" />
                 <DropdownMenuItem
-                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  onClick={() => signOut({ callbackUrl: `${window.location.origin}/login` })}
                   className="gap-2 rounded-lg text-red-400 focus:bg-red-500/10 focus:text-red-400"
                 >
                   <LogOut className="h-4 w-4" />

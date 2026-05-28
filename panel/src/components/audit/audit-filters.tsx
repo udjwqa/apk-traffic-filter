@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, X, ChevronDown } from "lucide-react";
 import type { AuditLogFilters } from "@/lib/types/dashboard";
-import { COUNTRIES, REJECTION_CODES } from "@/lib/mock-data";
+import { COUNTRIES, REJECTION_CODES } from "@/lib/constants";
 
 interface AuditFiltersProps {
   filters: AuditLogFilters;
@@ -121,8 +121,8 @@ export function AuditFilters({
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
-        <div className="relative lg:col-span-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="relative sm:col-span-2">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/25" />
           <Input
             placeholder="IP, User-Agent, Device..."

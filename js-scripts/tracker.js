@@ -207,18 +207,30 @@
     var payload = JSON.stringify(metrics);
 
     try {
-      if (navigator.sendBeacon) {
-        navigator.sendBeacon(COLLECT_URL, new Blob([payload], { type: "application/json" }));
-      } else {
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", COLLECT_URL, true);
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.send(payload);
-      }
-    } catch(e) {}
-
-    if (window.__TRACKER_CALLBACK) {
-      window.__TRACKER_CALLBACK(metrics);
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", COLLECT_URL, true);
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.onloadend = function() {
+        try {
+          if (window.__TRACKER_CALLBACK) {
+            window.__TRACKER_CALLBACK(metrics);
+          }
+        } catch(ce) {}
+      };
+      xhr.onerror = function() {
+        try {
+          if (window.__TRACKER_CALLBACK) {
+            window.__TRACKER_CALLBACK(metrics);
+          }
+        } catch(ce) {}
+      };
+      xhr.send(payload);
+    } catch(e) {
+      try {
+        if (window.__TRACKER_CALLBACK) {
+          window.__TRACKER_CALLBACK(metrics);
+        }
+      } catch(ce) {}
     }
   }
 

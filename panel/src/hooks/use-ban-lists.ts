@@ -2,13 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { BannedEntry, WhitelistEntry } from "@/lib/types/dashboard";
-import { getDefaultBanList, getDefaultWhitelist } from "@/lib/mock-data";
-import { useMockMode } from "@/lib/mock-mode-context";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export function useBanLists() {
-  const { isMockEnabled } = useMockMode();
   const [banList, setBanList] = useState<BannedEntry[]>([]);
   const [whitelist, setWhitelist] = useState<WhitelistEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -16,45 +13,34 @@ export function useBanLists() {
   const [searchWhitelist, setSearchWhitelist] = useState("");
 
   useEffect(() => {
-    if (isMockEnabled) {
-      setBanList(getDefaultBanList());
-      setWhitelist(getDefaultWhitelist());
-      setIsLoading(false);
-    } else {
-      fetch(`${API_URL}/api/bans/honeypot`)
-        .then((r) => r.json())
-        .then((data: Array<{ id: string; ip: string; reason: string; source: string; bannedAt: string; cfRuleId?: string }>) => {
-          setBanList(
-            data.map((b) => ({
-              id: b.id,
-              ip: b.ip,
-              reason: b.reason || "honeypot",
-              source: b.source === "honeypot" ? "Honeypot" : b.source,
-              bannedAt: b.bannedAt,
-              bannedBy: "system",
-            }))
-          );
-        })
-        .catch(() => setBanList([]));
+    fetch(`${API_URL}/api/bans/honeypot`)
+      .then((r) => r.json())
+      .then((data: Array<{ id: string; ip: string; reason: string; source: string; bannedAt: string; cfRuleId?: string }>) => {
+        setBanList(
+          data.map((b) => ({
+            id: b.id,
+            ip: b.ip,
+            reason: b.reason || "honeypot",
+            source: b.source === "honeypot" ? "Honeypot" : b.source,
+            bannedAt: b.bannedAt,
+            bannedBy: "system",
+          }))
+        );
+      })
+      .catch(() => setBanList([]));
 
-      setWhitelist(getDefaultWhitelist());
-      setIsLoading(false);
-    }
-  }, [isMockEnabled]);
+    setWhitelist([]);
+    setIsLoading(false);
+  }, []);
 
   const unban = useCallback(
     async (id: string) => {
       const entry = banList.find((e) => e.id === id);
       if (!entry) return;
-
-      if (!isMockEnabled) {
-        await fetch(`${API_URL}/api/bans/honeypot/${entry.ip}`, {
-          method: "DELETE",
-        });
-      }
+      await fetch(`${API_URL}/api/bans/honeypot/${entry.ip}`, { method: "DELETE" });
       setBanList((prev) => prev.filter((e) => e.id !== id));
     },
-    [banList, isMockEnabled]
+    [banList]
   );
 
   const addBan = useCallback(async (ip: string, reason: string) => {

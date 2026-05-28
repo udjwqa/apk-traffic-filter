@@ -141,6 +141,7 @@ export function RequestFeed({
         </div>
 
         <ScrollArea className="h-[400px]">
+          <div className="min-w-[600px]">
           <Table>
             <TableHeader>
               <TableRow className="border-white/[0.04] hover:bg-transparent">
@@ -185,6 +186,7 @@ export function RequestFeed({
               )}
             </TableBody>
           </Table>
+          </div>
         </ScrollArea>
       </div>
 

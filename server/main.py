@@ -64,11 +64,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://threeamigosteam.com",
-        "https://api.threeamigosteam.com",
-        "http://localhost:3000",
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -78,7 +74,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         skip_paths = ("/api/health", "/api/bans", "/api/config", "/api/lists",
                       "/api/offers", "/api/cf/", "/api/dashboard", "/api/audit",
-                      "/api/form", "/api/collect", "/api/integrity")
+                      "/api/form", "/api/collect", "/api/integrity", "/api/apps")
         if any(request.url.path.startswith(p) for p in skip_paths):
             return await call_next(request)
 
@@ -114,6 +110,9 @@ app.include_router(cf_sync_router)
 
 from api.integrity_routes import router as integrity_router
 app.include_router(integrity_router)
+
+from api.apps_routes import router as apps_router
+app.include_router(apps_router)
 
 from api.honeypot import router as honeypot_router
 app.include_router(honeypot_router)

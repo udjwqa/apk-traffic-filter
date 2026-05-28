@@ -156,6 +156,7 @@ export function AuditTable({
     <>
       <div className="rounded-2xl border border-white/[0.06] bg-[oklch(0.11_0_0)]">
         <ScrollArea className="h-[520px]">
+          <div className="min-w-[700px]">
           <Table>
             <TableHeader>
               <TableRow className="border-white/[0.04] hover:bg-transparent">
@@ -211,6 +212,7 @@ export function AuditTable({
                   ))}
             </TableBody>
           </Table>
+          </div>
         </ScrollArea>
 
         <div className="flex items-center justify-between border-t border-white/[0.06] px-4 py-3">

@@ -273,7 +273,7 @@ export function RequestDetailModal({
     }
     if (activeTab === "raw") {
       return (
-        <pre className="text-xs text-white/60">
+        <pre className="text-xs text-white/60 whitespace-pre-wrap break-all">
           {JSON.stringify(entry.rawPayload, null, 2)}
         </pre>
       );
@@ -288,7 +288,7 @@ export function RequestDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg bg-[oklch(0.11_0_0)] border-white/[0.08] text-white">
+      <DialogContent className="sm:max-w-2xl bg-[oklch(0.11_0_0)] border-white/[0.08] text-white max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <DialogTitle className="text-white">

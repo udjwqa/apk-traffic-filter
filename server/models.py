@@ -48,6 +48,30 @@ class OfferConfig(BaseModel):
     ] = "redirect_safe"
 
 
+class AppEntry(BaseModel):
+    id: str = ""
+    name: str = ""
+    package_name: str = ""
+    cert_sha256: str = ""
+    gcp_project_id: str = ""
+    safe_url: str = ""
+    target_url: str = ""
+    white_flow_type: Literal[
+        "show_403", "show_404", "redirect_safe", "fake_html"
+    ] = "redirect_safe"
+    panic_mode: bool = False
+    created_at: str = ""
+
+
+class AppEntryCreate(BaseModel):
+    name: str
+    package_name: str
+    cert_sha256: str = ""
+    safe_url: str = ""
+    target_url: str = ""
+    white_flow_type: str = "redirect_safe"
+
+
 class ScoringDetail(BaseModel):
     check: str
     points: int

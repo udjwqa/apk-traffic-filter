@@ -1,26 +1,41 @@
-import { auth } from "@/lib/auth";
+"use client";
+
+import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/sidebar";
 import { Header } from "@/components/header";
-import { MockModeProvider } from "@/lib/mock-mode-context";
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
+  const { data: session, status } = useSession();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  if (status === "loading") return null;
   if (!session?.user) redirect("/login");
 
   return (
-    <MockModeProvider>
-      <div className="flex min-h-screen">
-        <Sidebar />
-        <div className="flex flex-1 flex-col pl-64">
-          <Header user={session.user} />
-          <main className="flex-1 p-6">{children}</main>
-        </div>
+    <div className="flex min-h-screen">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-20 bg-black/60 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      <div className="flex flex-1 flex-col md:pl-64">
+        <Header
+          user={session.user}
+          onToggleSidebar={() => setSidebarOpen((p) => !p)}
+        />
+        <main className="flex-1 p-4 md:p-6">{children}</main>
       </div>
-    </MockModeProvider>
+    </div>
   );
 }

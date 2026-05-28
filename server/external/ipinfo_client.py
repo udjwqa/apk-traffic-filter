@@ -29,6 +29,20 @@ class IPInfoResult:
         self.relay = privacy.get("relay", False)
         self.tor = privacy.get("tor", False)
 
+        if not privacy:
+            org_lower = self.org.lower()
+            HOSTING_KEYWORDS = [
+                "hosting", "server", "cloud", "vps", "dedicated",
+                "datacenter", "data center", "colocation", "colo",
+                "hetzner", "ovh", "digitalocean", "linode", "vultr",
+                "cherry servers", "leaseweb", "contabo", "scaleway",
+                "proxy", "vpn", "tunnel", "anonymi",
+            ]
+            for kw in HOSTING_KEYWORDS:
+                if kw in org_lower:
+                    self.hosting = True
+                    break
+
     @property
     def isp(self) -> str:
         org = self.org

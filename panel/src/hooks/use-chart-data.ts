@@ -5,38 +5,30 @@ import type {
   TrafficDataPoint,
   RejectionReason,
 } from "@/lib/types/dashboard";
-import {
-  generateMockTrafficData,
-  generateMockRejectionReasons,
-} from "@/lib/mock-data";
-import { useMockMode } from "@/lib/mock-mode-context";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export function useChartData(refreshIntervalMs = 30000) {
-  const { isMockEnabled } = useMockMode();
   const [trafficData, setTrafficData] = useState<TrafficDataPoint[]>([]);
-  const [rejectionReasons, setRejectionReasons] = useState<RejectionReason[]>(
-    []
-  );
+  const [rejectionReasons, setRejectionReasons] = useState<RejectionReason[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
-      if (isMockEnabled) {
-        setTrafficData(generateMockTrafficData());
-        setRejectionReasons(generateMockRejectionReasons());
-      } else {
-        // TODO(backend): fetch from real API
-        setTrafficData([]);
-        setRejectionReasons([]);
-      }
+      const [trafficRes, rejectionsRes] = await Promise.all([
+        fetch(`${API_URL}/api/dashboard/traffic`),
+        fetch(`${API_URL}/api/dashboard/rejections`),
+      ]);
+      if (trafficRes.ok) setTrafficData(await trafficRes.json());
+      if (rejectionsRes.ok) setRejectionReasons(await rejectionsRes.json());
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to fetch chart data");
     } finally {
       setIsLoading(false);
     }
-  }, [isMockEnabled]);
+  }, []);
 
   useEffect(() => {
     refresh();

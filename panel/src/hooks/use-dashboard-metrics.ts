@@ -2,30 +2,25 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { DashboardMetrics } from "@/lib/types/dashboard";
-import { generateMockMetrics } from "@/lib/mock-data";
-import { useMockMode } from "@/lib/mock-mode-context";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export function useDashboardMetrics(refreshIntervalMs = 5000) {
-  const { isMockEnabled } = useMockMode();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
-      if (isMockEnabled) {
-        setMetrics(generateMockMetrics());
-      } else {
-        // TODO(backend): Replace with fetch('/api/dashboard/metrics')
-        setMetrics(null);
-      }
+      const res = await fetch(`${API_URL}/api/dashboard/metrics`);
+      if (res.ok) setMetrics(await res.json());
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to fetch metrics");
     } finally {
       setIsLoading(false);
     }
-  }, [isMockEnabled]);
+  }, []);
 
   useEffect(() => {
     refresh();

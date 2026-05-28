@@ -127,6 +127,41 @@ class RequestLogger:
                 "currentRps": 0,
             }
 
+    async def get_traffic_hourly(self):
+        try:
+            cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=24)
+            async with async_session() as session:
+                q = await session.execute(
+                    select(
+                        func.date_trunc("hour", RequestLog.timestamp).label("hour"),
+                        RequestLog.verdict,
+                        func.count().label("cnt"),
+                    )
+                    .where(RequestLog.timestamp > cutoff)
+                    .group_by("hour", RequestLog.verdict)
+                    .order_by("hour")
+                )
+                rows = q.all()
+
+            hourly: dict[str, dict[str, int]] = {}
+            for h in range(24):
+                t = (datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=23 - h)).replace(minute=0, second=0, microsecond=0)
+                key = f"{t.hour:02d}:00"
+                hourly[key] = {"grey": 0, "white": 0}
+
+            for hour_ts, verdict, cnt in rows:
+                key = f"{hour_ts.hour:02d}:00"
+                if key in hourly and verdict in ("grey", "white"):
+                    hourly[key][verdict] = cnt
+
+            return [
+                {"hour": k, "grey": v["grey"], "white": v["white"]}
+                for k, v in hourly.items()
+            ]
+        except Exception as e:
+            logger.error(f"get_traffic_hourly error: {e}")
+            return []
+
     async def get_rejections(self):
         labels = {
             "no_client_secret": "Нет клиентского секрета",

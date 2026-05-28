@@ -1,5 +1,5 @@
-import { OffersContent } from "@/components/offers/offers-content";
+import { AppsContent } from "@/components/apps/apps-content";
 
 export default function AppsPage() {
-  return <OffersContent />;
+  return <AppsContent />;
 }

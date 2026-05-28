@@ -117,7 +117,8 @@ async def verify_integrity(body: IntegrityRequest, request: Request):
             "verdict": "grey",
         })
 
-    verdict = await play_integrity_client.verify_token(body.integrityToken)
+    package_name = request.headers.get("x-package-name", "")
+    verdict = await play_integrity_client.verify_token(body.integrityToken, package_name)
 
     if not verdict:
         return JSONResponse({
@@ -192,8 +193,22 @@ async def verify_integrity(body: IntegrityRequest, request: Request):
             reason=f"Device integrity: {verdict.device_recognition} — не BASIC",
         ))
 
-    # App tampered — не PLAY_RECOGNIZED (модифицирован, репак, сторонний код)
-    if not verdict.is_recognized_app:
+    # App recognition check
+    if verdict.app_recognition == "UNEVALUATED":
+        total += AUTOBAN_SCORE
+        rejection_code = rejection_code or "app_tampered"
+        details.append(ScoringDetail(
+            check="play_integrity_app",
+            points=AUTOBAN_SCORE,
+            reason=f"App recognition: UNEVALUATED — проверка не выполнена",
+        ))
+    elif verdict.app_recognition == "UNRECOGNIZED_VERSION":
+        details.append(ScoringDetail(
+            check="play_integrity_app_version",
+            points=0,
+            reason=f"App recognition: UNRECOGNIZED_VERSION — версия не в Play (sideload/тест), не блокируем",
+        ))
+    elif not verdict.is_recognized_app:
         total += AUTOBAN_SCORE
         rejection_code = rejection_code or "app_tampered"
         details.append(ScoringDetail(
@@ -203,8 +218,15 @@ async def verify_integrity(body: IntegrityRequest, request: Request):
         ))
 
     # Certificate SHA-256 mismatch — APK переподписан
-    if EXPECTED_CERT_SHA256 and verdict.certificate_sha256:
-        if EXPECTED_CERT_SHA256 not in verdict.certificate_sha256:
+    def normalize_b64(s: str) -> str:
+        return s.replace("+", "-").replace("/", "_").rstrip("=")
+
+    app = config_store.get_app(verdict.package_name)
+    expected_cert = app.cert_sha256 if app and app.cert_sha256 else EXPECTED_CERT_SHA256
+    if expected_cert and verdict.certificate_sha256:
+        expected_norm = normalize_b64(expected_cert)
+        got_norms = [normalize_b64(c) for c in verdict.certificate_sha256]
+        if expected_norm not in got_norms:
             total += AUTOBAN_SCORE
             rejection_code = rejection_code or "cert_mismatch"
             details.append(ScoringDetail(
@@ -213,7 +235,7 @@ async def verify_integrity(body: IntegrityRequest, request: Request):
                 reason=f"Certificate SHA-256 не совпадает — APK переподписан (got: {verdict.certificate_sha256})",
             ))
 
-    if not verdict.is_licensed:
+    if verdict.app_licensing == "UNLICENSED":
         total += 30
         details.append(ScoringDetail(
             check="play_integrity_license",

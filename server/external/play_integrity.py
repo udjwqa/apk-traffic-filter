@@ -8,6 +8,7 @@ logger = logging.getLogger("play_integrity")
 
 GCP_KEY_PATH = os.getenv("GCP_KEY_PATH", "config/gcp-key.json")
 PACKAGE_NAME = os.getenv("PACKAGE_NAME", "")
+CONFIG_DIR = Path(__file__).parent.parent / "config"
 
 
 class IntegrityVerdict:
@@ -67,40 +68,79 @@ class IntegrityVerdict:
 
 class PlayIntegrityClient:
     def __init__(self):
-        self._service = None
+        self._services: dict[str, object] = {}
+        self._default_service = None
+        self._default_package = ""
         self._available = False
 
     def init(self):
-        key_path = Path(GCP_KEY_PATH)
-        if not key_path.exists():
-            logger.warning(f"GCP key not found at {GCP_KEY_PATH} — Play Integrity disabled")
-            return
+        from google.oauth2 import service_account
+        from googleapiclient.discovery import build
 
-        if not PACKAGE_NAME:
-            logger.warning("PACKAGE_NAME not set — Play Integrity disabled")
-            return
+        for key_file in sorted(CONFIG_DIR.glob("gcp-key*.json")):
+            try:
+                with open(key_file) as f:
+                    key_data = json.load(f)
+                project_id = key_data.get("project_id", "")
 
-        try:
-            from google.oauth2 import service_account
-            from googleapiclient.discovery import build
+                credentials = service_account.Credentials.from_service_account_file(
+                    str(key_file),
+                    scopes=["https://www.googleapis.com/auth/playintegrity"],
+                )
+                service = build("playintegrity", "v1", credentials=credentials)
+                self._services[project_id] = service
+                logger.info(f"Play Integrity key loaded: {key_file.name} (project={project_id})")
+            except Exception as e:
+                logger.error(f"Failed to load {key_file.name}: {e}")
 
-            credentials = service_account.Credentials.from_service_account_file(
-                str(key_path),
-                scopes=["https://www.googleapis.com/auth/playintegrity"],
-            )
-            self._service = build("playintegrity", "v1", credentials=credentials)
+        if self._services:
             self._available = True
-            logger.info(f"Play Integrity API initialized (package={PACKAGE_NAME})")
-        except Exception as e:
-            logger.error(f"Play Integrity init failed: {e}")
+
+        key_path = Path(GCP_KEY_PATH)
+        if key_path.exists():
+            try:
+                with open(key_path) as f:
+                    default_project = json.load(f).get("project_id", "")
+                self._default_service = self._services.get(default_project)
+                self._default_package = PACKAGE_NAME
+            except Exception:
+                pass
+
+        logger.info(f"Play Integrity: {len(self._services)} key(s) loaded, default_package={self._default_package}")
+
+    def _get_service_for_package(self, package_name: str):
+        from config import config_store
+
+        app = config_store.get_app(package_name)
+        if app and app.gcp_project_id and app.gcp_project_id in self._services:
+            return self._services[app.gcp_project_id], package_name
+
+        if self._default_service:
+            return self._default_service, package_name or self._default_package
+
+        if self._services:
+            first_service = next(iter(self._services.values()))
+            return first_service, package_name or self._default_package
+
+        return None, package_name
 
     @property
     def available(self):
         return self._available
 
-    async def verify_token(self, integrity_token: str) -> Optional[IntegrityVerdict]:
-        if not self._available or not self._service:
+    async def verify_token(self, integrity_token: str, package_name: str = "") -> Optional[IntegrityVerdict]:
+        if not self._available:
             logger.debug("Play Integrity not available, skipping verification")
+            return None
+
+        pkg = package_name or self._default_package
+        if not pkg:
+            logger.warning("No package name for integrity verification")
+            return None
+
+        service, resolved_pkg = self._get_service_for_package(pkg)
+        if not service:
+            logger.warning(f"No GCP service found for package {pkg}")
             return None
 
         try:
@@ -108,8 +148,8 @@ class PlayIntegrityClient:
             loop = asyncio.get_event_loop()
 
             def _decode():
-                return self._service.v1().decodeIntegrityToken(
-                    packageName=PACKAGE_NAME,
+                return service.v1().decodeIntegrityToken(
+                    packageName=resolved_pkg,
                     body={"integrityToken": integrity_token},
                 ).execute()
 
@@ -117,14 +157,14 @@ class PlayIntegrityClient:
             verdict = IntegrityVerdict(result)
 
             logger.info(
-                f"Integrity: app={verdict.app_recognition} "
+                f"Integrity [{resolved_pkg}]: app={verdict.app_recognition} "
                 f"device={verdict.device_recognition} "
                 f"license={verdict.app_licensing}"
             )
             return verdict
 
         except Exception as e:
-            logger.error(f"Play Integrity verify failed: {e}")
+            logger.error(f"Play Integrity verify failed [{resolved_pkg}]: {e}")
             return None
 
 
