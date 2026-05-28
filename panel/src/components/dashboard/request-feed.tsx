@@ -48,9 +48,12 @@ const FeedRow = memo(function FeedRow({
       </TableCell>
       <TableCell className="py-2 text-xs">
         <span className="text-white/70">{entry.ip}</span>
-        <span className="ml-1.5 text-white/30">
-          {entry.countryCode}
-        </span>
+      </TableCell>
+      <TableCell className="py-2 text-xs text-white/50">
+        {entry.countryCode || entry.rawPayload?.headers?.["cf-ipcountry"] || "—"}
+      </TableCell>
+      <TableCell className="py-2 text-xs text-white/50 truncate max-w-[100px]">
+        {entry.rawPayload?.headers?.["x-package-name"]?.split(".")?.pop() || "—"}
       </TableCell>
       <TableCell className="py-2 text-xs">
         <span className="text-white/60">{entry.deviceModel}</span>
@@ -149,7 +152,13 @@ export function RequestFeed({
                   Время
                 </TableHead>
                 <TableHead className="text-[11px] text-white/30">
-                  IP / Страна
+                  IP
+                </TableHead>
+                <TableHead className="text-[11px] text-white/30 w-12">
+                  Страна
+                </TableHead>
+                <TableHead className="text-[11px] text-white/30 w-24">
+                  Прила
                 </TableHead>
                 <TableHead className="text-[11px] text-white/30">
                   Устройство / ОС
@@ -169,7 +178,7 @@ export function RequestFeed({
               {entries.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={8}
                     className="h-32 text-center text-sm text-white/20"
                   >
                     Ожидание данных...

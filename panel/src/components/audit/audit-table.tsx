@@ -63,7 +63,12 @@ const AuditRow = memo(function AuditRow({
       </TableCell>
       <TableCell onClick={onSelect} className="cursor-pointer py-2.5 text-xs">
         <span className="text-white/70">{entry.ip}</span>
-        <span className="ml-1.5 text-white/30">{entry.countryCode}</span>
+      </TableCell>
+      <TableCell onClick={onSelect} className="cursor-pointer py-2.5 text-xs text-white/50">
+        {entry.countryCode || entry.rawPayload?.headers?.["cf-ipcountry"] || "—"}
+      </TableCell>
+      <TableCell onClick={onSelect} className="cursor-pointer py-2.5 text-xs text-white/50 truncate max-w-[100px]">
+        {entry.rawPayload?.headers?.["x-package-name"]?.split(".")?.pop() || "—"}
       </TableCell>
       <TableCell onClick={onSelect} className="cursor-pointer py-2.5 text-xs">
         <span className="text-white/60">{entry.deviceModel}</span>
@@ -156,7 +161,7 @@ export function AuditTable({
     <>
       <div className="rounded-2xl border border-white/[0.06] bg-[oklch(0.11_0_0)]">
         <ScrollArea className="h-[520px]">
-          <div className="min-w-[700px]">
+          <div className="min-w-[800px]">
           <Table>
             <TableHeader>
               <TableRow className="border-white/[0.04] hover:bg-transparent">
@@ -164,7 +169,13 @@ export function AuditTable({
                   Время
                 </TableHead>
                 <TableHead className="text-[11px] text-white/30">
-                  IP / Страна
+                  IP
+                </TableHead>
+                <TableHead className="text-[11px] text-white/30 w-14">
+                  Страна
+                </TableHead>
+                <TableHead className="text-[11px] text-white/30 w-24">
+                  Прила
                 </TableHead>
                 <TableHead className="text-[11px] text-white/30">
                   Устройство / ОС
@@ -187,7 +198,7 @@ export function AuditTable({
               {isLoading
                 ? Array.from({ length: 10 }).map((_, i) => (
                     <TableRow key={i} className="border-white/[0.04]">
-                      {Array.from({ length: 7 }).map((_, j) => (
+                      {Array.from({ length: 9 }).map((_, j) => (
                         <TableCell key={j} className="py-2.5">
                           <Skeleton className="h-4 w-full bg-white/[0.04]" />
                         </TableCell>
