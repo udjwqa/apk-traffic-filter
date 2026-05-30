@@ -36,6 +36,8 @@ export function AppsContent() {
     safe_url: "",
     target_url: "",
     white_flow_type: "redirect_safe",
+    excluded_countries: "",
+    disable_lang_check: false,
   });
   const [error, setError] = useState("");
 
@@ -48,6 +50,8 @@ export function AppsContent() {
       safe_url: "",
       target_url: "",
       white_flow_type: "redirect_safe",
+      excluded_countries: "",
+      disable_lang_check: false,
     });
     setError("");
     setDialogOpen(true);
@@ -62,6 +66,8 @@ export function AppsContent() {
       safe_url: app.safe_url,
       target_url: app.target_url,
       white_flow_type: app.white_flow_type,
+      excluded_countries: (app.excluded_countries || []).join(", "),
+      disable_lang_check: app.disable_lang_check || false,
     });
     setError("");
     setDialogOpen(true);
@@ -73,10 +79,16 @@ export function AppsContent() {
       return;
     }
     try {
+      const payload = {
+        ...form,
+        excluded_countries: form.excluded_countries
+          ? form.excluded_countries.split(",").map((s: string) => s.trim().toUpperCase()).filter(Boolean)
+          : [],
+      };
       if (editingApp) {
-        await updateApp(editingApp.id, form);
+        await updateApp(editingApp.id, payload);
       } else {
-        await addApp(form);
+        await addApp(payload as any);
       }
       setDialogOpen(false);
       setError("");
@@ -352,6 +364,34 @@ export function AppsContent() {
                 <option value="show_404">Показать 404</option>
                 <option value="fake_html">Фейковая HTML-страница</option>
               </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs text-white/50">
+                Исключённые страны (коды через запятую)
+              </label>
+              <Input
+                value={form.excluded_countries}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, excluded_countries: e.target.value }))
+                }
+                placeholder="US, GB"
+                className="rounded-xl border-white/10 bg-white/5 text-white font-mono text-xs"
+              />
+              <p className="text-[10px] text-white/25">
+                Страны из этого списка не будут блокироваться для этого приложения
+              </p>
+            </div>
+            <div className="flex items-center justify-between rounded-xl bg-white/[0.03] px-3 py-2.5">
+              <div>
+                <p className="text-xs text-white/50">Отключить проверку языка</p>
+                <p className="text-[10px] text-white/25">Не проверять язык устройства vs страну IP</p>
+              </div>
+              <Switch
+                checked={form.disable_lang_check}
+                onCheckedChange={(v) =>
+                  setForm((p) => ({ ...p, disable_lang_check: v }))
+                }
+              />
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button

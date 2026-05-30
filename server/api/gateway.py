@@ -42,6 +42,8 @@ async def gateway(request: Request):
     isp = headers.get("x-isp", "")
     os_version = headers.get("x-os-version", "")
     cf_asn = headers.get("x-cf-asn", "")
+    package_name = headers.get("x-package-name", "")
+    referer = headers.get("referer", headers.get("referrer", ""))
 
     result = await scoring_engine.score_request(
         user_agent=user_agent,
@@ -56,6 +58,8 @@ async def gateway(request: Request):
         isp=isp,
         ip=ip,
         asn=cf_asn,
+        package_name=package_name,
+        referer=referer,
     )
 
     await request_logger.log(
@@ -120,6 +124,8 @@ async def score_debug(request: Request):
         isp=headers.get("x-isp", ""),
         ip=ip,
         asn=headers.get("x-cf-asn", ""),
+        package_name=headers.get("x-package-name", ""),
+        referer=headers.get("referer", headers.get("referrer", "")),
     )
 
     await request_logger.log(

@@ -60,6 +60,8 @@ class AppEntry(BaseModel):
         "show_403", "show_404", "redirect_safe", "fake_html"
     ] = "redirect_safe"
     panic_mode: bool = False
+    excluded_countries: List[str] = []
+    disable_lang_check: bool = False
     created_at: str = ""
 
 

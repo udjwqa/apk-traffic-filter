@@ -13,6 +13,8 @@ export interface AppEntry {
   target_url: string;
   white_flow_type: string;
   panic_mode: boolean;
+  excluded_countries: string[];
+  disable_lang_check: boolean;
   created_at: string;
 }
 

@@ -23,7 +23,8 @@ async def collect_metrics(request: Request):
         real_ip or (request.client.host if request.client else "0.0.0.0")
     )
 
-    js_result = await scoring_engine.score_js_metrics(data, ip)
+    package_name = request.headers.get("x-package-name", "")
+    js_result = await scoring_engine.score_js_metrics(data, ip, package_name)
 
     await request_logger.log(
         ip=ip,

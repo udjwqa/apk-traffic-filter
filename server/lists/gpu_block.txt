@@ -2,7 +2,6 @@ Android Emulator
 SwiftShader
 VirtualBox
 VMware SVGA
-ANGLE
 llvmpipe
 softpipe
 Mesa DRI

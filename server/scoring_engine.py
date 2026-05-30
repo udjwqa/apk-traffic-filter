@@ -28,6 +28,8 @@ class ScoringEngine:
         isp: str = "",
         ip: str = "",
         asn: str = "",
+        package_name: str = "",
+        referer: str = "",
     ) -> ScoringResult:
         cfg = config_store.engine
         details = []
@@ -135,6 +137,24 @@ class ScoringEngine:
                         ))
                         break
 
+        # Referer — служебный трафик Google
+        if referer:
+            GOOGLE_REFERERS = [
+                "google.com/", "accounts.google.com", "support.google.com",
+                "play.google.com/console", "admin.google.com",
+            ]
+            ref_lower = referer.lower()
+            for gr in GOOGLE_REFERERS:
+                if gr in ref_lower:
+                    pts = AUTOBAN_SCORE
+                    total += pts
+                    rejection_code = rejection_code or "google_referer"
+                    details.append(ScoringDetail(
+                        check="referer_block", points=pts,
+                        reason=f"Referer '{referer[:60]}' — служебный трафик Google",
+                    ))
+                    break
+
         # IP в CIDR-диапазонах ботов/датацентров
         if ip and ip_range_checker.is_blocked(ip):
             pts = AUTOBAN_SCORE
@@ -234,15 +254,19 @@ class ScoringEngine:
 
         # === БЛОК 3: Гео-проверки ===
 
+        app = config_store.get_app(package_name) if package_name else None
+        excluded_countries = [c.upper() for c in (app.excluded_countries if app else [])]
+
         if effective_country:
-            if lists_manager.lookup("countries_block", effective_country.upper()):
-                pts = AUTOBAN_SCORE
-                total += pts
-                rejection_code = rejection_code or "country_blocked"
-                details.append(ScoringDetail(
-                    check="country_block", points=pts,
-                    reason=f"Страна '{effective_country}' в чёрном списке",
-                ))
+            if effective_country.upper() not in excluded_countries:
+                if lists_manager.lookup("countries_block", effective_country.upper()):
+                    pts = AUTOBAN_SCORE
+                    total += pts
+                    rejection_code = rejection_code or "country_blocked"
+                    details.append(ScoringDetail(
+                        check="country_block", points=pts,
+                        reason=f"Страна '{effective_country}' в чёрном списке",
+                    ))
 
         if effective_city:
             cities_list = lists_manager.get_list("cities_block")
@@ -292,7 +316,7 @@ class ScoringEngine:
         )
 
 
-    async def score_js_metrics(self, data: dict, ip: str = "") -> ScoringResult:
+    async def score_js_metrics(self, data: dict, ip: str = "", package_name: str = "") -> ScoringResult:
         from external.timezone_utils import compare_timezones
 
         cfg = config_store.engine
@@ -495,6 +519,9 @@ class ScoringEngine:
             ))
 
         # === ЯЗЫКОВАЯ ЭВРИСТИКА (модераторский паттерн) ===
+        app = config_store.get_app(package_name) if package_name else None
+        skip_lang = app.disable_lang_check if app else False
+
         js_lang = data.get("language", "")
         js_languages = data.get("languages", [])
         ip_country = ipinfo_data.country.upper() if ipinfo_data and ipinfo_data.country else ""
@@ -507,7 +534,7 @@ class ScoringEngine:
             "kk": {"KZ"},
             "uz": {"UZ"},
             "de": {"DE", "AT", "CH"},
-            "fr": {"FR", "BE", "CH", "CA"},
+            "fr": {"FR", "BE", "CH", "CA", "CI", "SN", "ML", "CM", "CG", "CD", "MG", "HT", "TN", "DZ", "MA"},
             "es": {"ES", "MX", "AR", "CO", "CL", "PE", "VE"},
             "pt": {"BR", "PT"},
             "ar": {"SA", "AE", "EG", "IQ", "JO", "KW", "QA", "BH", "OM", "LB"},
@@ -521,7 +548,7 @@ class ScoringEngine:
         }
 
         # 1. Язык устройства не совпадает со страной IP
-        if js_lang and ip_country:
+        if not skip_lang and js_lang and ip_country:
             lang_code = js_lang[:2].lower()
             expected_countries = LANG_COUNTRY_MAP.get(lang_code, set())
             if lang_code == "en":
@@ -536,7 +563,7 @@ class ScoringEngine:
                 ))
 
         # 2. Множество языков на устройстве (3+) — паттерн модератора
-        if len(js_languages) >= 3:
+        if not skip_lang and len(js_languages) >= 3:
             pts = 15
             soft_score += pts
             details.append(ScoringDetail(
@@ -545,7 +572,7 @@ class ScoringEngine:
             ))
 
         # 3. Язык устройства — экзотический для целевого трафика
-        if js_lang and ip_country:
+        if not skip_lang and js_lang and ip_country:
             exotic_langs = {"ar", "vi", "th", "hi", "bn", "ta", "te", "ml", "ko", "ja", "zh"}
             lang_code = js_lang[:2].lower()
             if lang_code in exotic_langs and ip_country in {"US", "GB", "DE", "FR"}:
