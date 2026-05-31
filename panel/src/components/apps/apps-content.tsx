@@ -33,6 +33,7 @@ export function AppsContent() {
     name: "",
     package_name: "",
     cert_sha256: "",
+    gcp_project_id: "",
     safe_url: "",
     target_url: "",
     white_flow_type: "redirect_safe",
@@ -47,6 +48,7 @@ export function AppsContent() {
       name: "",
       package_name: "",
       cert_sha256: "",
+      gcp_project_id: "",
       safe_url: "",
       target_url: "",
       white_flow_type: "redirect_safe",
@@ -63,6 +65,7 @@ export function AppsContent() {
       name: app.name,
       package_name: app.package_name,
       cert_sha256: app.cert_sha256,
+      gcp_project_id: app.gcp_project_id || "",
       safe_url: app.safe_url,
       target_url: app.target_url,
       white_flow_type: app.white_flow_type,
@@ -323,6 +326,22 @@ export function AppsContent() {
                 placeholder="5QabPPipWBDaB1A2ZBvB+m318Yg..."
                 className="rounded-xl border-white/10 bg-white/5 text-white font-mono text-xs"
               />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs text-white/50">
+                GCP Project ID (для Play Integrity)
+              </label>
+              <Input
+                value={form.gcp_project_id}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, gcp_project_id: e.target.value }))
+                }
+                placeholder="betclic-497407"
+                className="rounded-xl border-white/10 bg-white/5 text-white font-mono text-xs"
+              />
+              <p className="text-[10px] text-white/25">
+                ID проекта из Google Cloud Console. Должен совпадать с project_id в gcp-key файле
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">

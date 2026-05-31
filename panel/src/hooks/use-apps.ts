@@ -9,6 +9,7 @@ export interface AppEntry {
   name: string;
   package_name: string;
   cert_sha256: string;
+  gcp_project_id: string;
   safe_url: string;
   target_url: string;
   white_flow_type: string;
