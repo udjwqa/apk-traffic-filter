@@ -159,7 +159,7 @@ export function RequestDetailModal({
             <span className="text-xs text-white/40 w-28 shrink-0">
               {row.label}
             </span>
-            <span className="flex-1 text-xs text-white/70 truncate px-2">
+            <span className="flex-1 text-xs text-white/70 break-all px-2">
               {row.value}
             </span>
             <span className={`text-[10px] font-medium ${statusColors[row.status]}`}>
@@ -242,10 +242,10 @@ export function RequestDetailModal({
     return (
       <div className="space-y-1">
         {rows.map((r) => (
-          <div key={r.label} className="flex items-center justify-between rounded-lg bg-white/[0.02] px-3 py-2">
-            <span className="text-xs text-white/40 w-32 shrink-0">{r.label}</span>
-            <span className="flex-1 text-xs text-white/70 truncate px-2 font-mono">{r.value}</span>
-            <span className={`text-[10px] font-medium ${colors[r.status]}`}>{labels[r.status]}</span>
+          <div key={r.label} className="flex items-start justify-between rounded-lg bg-white/[0.02] px-3 py-2 gap-2">
+            <span className="text-xs text-white/40 w-28 shrink-0">{r.label}</span>
+            <span className="flex-1 text-xs text-white/70 break-all px-1 font-mono">{r.value}</span>
+            <span className={`text-[10px] font-medium shrink-0 ${colors[r.status]}`}>{labels[r.status]}</span>
           </div>
         ))}
       </div>
@@ -316,12 +316,12 @@ export function RequestDetailModal({
           </div>
         </DialogHeader>
 
-        <div className="flex gap-1 rounded-xl bg-white/[0.03] p-1">
+        <div className="flex flex-wrap gap-1 rounded-xl bg-white/[0.03] p-1">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+              className={`flex-1 min-w-[70px] rounded-lg px-2 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
                 activeTab === tab.id
                   ? "bg-white/10 text-white"
                   : "text-white/40 hover:text-white/60"

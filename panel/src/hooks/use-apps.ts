@@ -15,6 +15,7 @@ export interface AppEntry {
   white_flow_type: string;
   panic_mode: boolean;
   excluded_countries: string[];
+  excluded_cities: string[];
   disable_lang_check: boolean;
   created_at: string;
 }

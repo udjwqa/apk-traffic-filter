@@ -11,7 +11,7 @@ async def get_metrics():
 
 @router.get("/api/dashboard/feed")
 async def get_feed(limit: int = 50):
-    return request_logger.get_recent(min(limit, 200))
+    return await request_logger.get_recent(min(limit, 200))
 
 
 @router.get("/api/dashboard/traffic")

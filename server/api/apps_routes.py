@@ -23,9 +23,13 @@ async def create_app(body: AppEntryCreate):
         name=body.name,
         package_name=body.package_name,
         cert_sha256=body.cert_sha256,
+        gcp_project_id=body.gcp_project_id,
         safe_url=body.safe_url,
         target_url=body.target_url,
         white_flow_type=body.white_flow_type,
+        excluded_countries=body.excluded_countries,
+        excluded_cities=body.excluded_cities,
+        disable_lang_check=body.disable_lang_check,
     )
     return app.model_dump()
 

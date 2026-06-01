@@ -1,8 +1,11 @@
+import os
+import json
 import uuid
 import logging
 from collections import deque
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+import redis.asyncio as aioredis
 from models import RequestLogEntry, ScoringResult
 from database import async_session
 from db_models import RequestLog
@@ -11,11 +14,42 @@ from sqlalchemy import select, func, desc
 logger = logging.getLogger("request_logger")
 
 MAX_MEMORY_ENTRIES = 500
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+PI_CACHE_TTL = 86400
 
 
 class RequestLogger:
     def __init__(self):
         self._recent = deque(maxlen=MAX_MEMORY_ENTRIES)
+        self._last_pi: dict[str, dict] = {}
+        self._redis = None
+
+    async def _get_redis(self):
+        if self._redis is None:
+            self._redis = aioredis.from_url(REDIS_URL, decode_responses=True)
+        return self._redis
+
+    async def _cache_pi(self, ip: str, pi_data: dict):
+        self._last_pi[ip] = pi_data
+        try:
+            r = await self._get_redis()
+            await r.set(f"pi_cache:{ip}", json.dumps(pi_data), ex=PI_CACHE_TTL)
+        except Exception:
+            pass
+
+    async def _get_cached_pi(self, ip: str) -> dict:
+        if ip in self._last_pi:
+            return self._last_pi[ip]
+        try:
+            r = await self._get_redis()
+            data = await r.get(f"pi_cache:{ip}")
+            if data:
+                pi = json.loads(data)
+                self._last_pi[ip] = pi
+                return pi
+        except Exception:
+            pass
+        return {}
 
     async def log(
         self,
@@ -34,11 +68,20 @@ class RequestLogger:
         entry_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc).replace(tzinfo=None)
 
+        source = (headers or {}).get("source", "")
+        pi_data = (js_metrics or {}).get("playIntegrity", {})
+
+        if source == "play_integrity" and pi_data:
+            await self._cache_pi(ip, pi_data)
+
+        if not pi_data:
+            pi_data = await self._get_cached_pi(ip)
+
         raw_payload = {
             "headers": headers or {},
             "scoringDetails": [d.model_dump() for d in result.details],
             "jsMetrics": js_metrics or {},
-            "playIntegrity": (js_metrics or {}).get("playIntegrity", {}),
+            "playIntegrity": pi_data,
         }
 
         memory_entry = RequestLogEntry(
@@ -78,8 +121,31 @@ class RequestLogger:
         except Exception as e:
             logger.error(f"Failed to write to DB: {e}")
 
-    def get_recent(self, limit: int = 50):
-        return list(self._recent)[:limit]
+    async def get_recent(self, limit: int = 50):
+        entries = list(self._recent)[:limit]
+        if not entries:
+            try:
+                async with async_session() as session:
+                    q = await session.execute(
+                        select(RequestLog)
+                        .order_by(desc(RequestLog.timestamp))
+                        .limit(limit)
+                    )
+                    rows = q.scalars().all()
+                    entries = [RequestLogEntry(**r.to_dict()) for r in rows]
+            except Exception as e:
+                logger.error(f"get_recent DB fallback error: {e}")
+                entries = []
+
+        for entry in entries:
+            raw = entry.rawPayload if isinstance(entry.rawPayload, dict) else {}
+            pi = raw.get("playIntegrity", {})
+            ip = entry.ip if hasattr(entry, "ip") else ""
+            if not pi and ip:
+                cached = await self._get_cached_pi(ip)
+                if cached:
+                    raw["playIntegrity"] = cached
+        return entries
 
     async def get_metrics(self):
         try:
@@ -265,8 +331,18 @@ class RequestLogger:
                 )
                 rows = rows_q.scalars().all()
 
+            entries = []
+            for r in rows:
+                d = r.to_dict()
+                pi = d.get("rawPayload", {}).get("playIntegrity", {})
+                if not pi and r.ip:
+                    cached = await self._get_cached_pi(r.ip)
+                    if cached:
+                        d.setdefault("rawPayload", {})["playIntegrity"] = cached
+                entries.append(d)
+
             return {
-                "entries": [r.to_dict() for r in rows],
+                "entries": entries,
                 "total": total,
                 "page": safe_page,
                 "pageSize": page_size,

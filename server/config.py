@@ -79,17 +79,24 @@ class ConfigStore:
         return None
 
     def add_app(self, name: str, package_name: str, cert_sha256: str = "",
-                safe_url: str = "", target_url: str = "",
-                white_flow_type: str = "redirect_safe") -> AppEntry:
+                gcp_project_id: str = "", safe_url: str = "", target_url: str = "",
+                white_flow_type: str = "redirect_safe",
+                excluded_countries: list = None,
+                excluded_cities: list = None,
+                disable_lang_check: bool = False) -> AppEntry:
         app = AppEntry(
             id=str(uuid.uuid4()),
             name=name,
             package_name=package_name,
             cert_sha256=cert_sha256,
+            gcp_project_id=gcp_project_id,
             safe_url=safe_url,
             target_url=target_url,
             white_flow_type=white_flow_type,
             panic_mode=False,
+            excluded_countries=excluded_countries or [],
+            excluded_cities=excluded_cities or [],
+            disable_lang_check=disable_lang_check,
             created_at=datetime.now(timezone.utc).isoformat(),
         )
         self.apps.append(app)

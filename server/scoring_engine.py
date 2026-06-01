@@ -268,18 +268,21 @@ class ScoringEngine:
                         reason=f"Страна '{effective_country}' в чёрном списке",
                     ))
 
+        excluded_cities = [c.lower() for c in (app.excluded_cities if app else [])]
+
         if effective_city:
-            cities_list = lists_manager.get_list("cities_block")
-            if cities_list:
-                for c in cities_list.items:
-                    if c.lower() == effective_city.lower():
-                        pts = cfg.weights.suspiciousCity
-                        total += pts
-                        details.append(ScoringDetail(
-                            check="city_block", points=pts,
-                            reason=f"Город '{effective_city}' — город модерации",
-                        ))
-                        break
+            if effective_city.lower() not in excluded_cities:
+                cities_list = lists_manager.get_list("cities_block")
+                if cities_list:
+                    for c in cities_list.items:
+                        if c.lower() == effective_city.lower():
+                            pts = cfg.weights.suspiciousCity
+                            total += pts
+                            details.append(ScoringDetail(
+                                check="city_block", points=pts,
+                                reason=f"Город '{effective_city}' — город модерации",
+                            ))
+                            break
 
         if effective_isp:
             isp_list = lists_manager.get_list("isp_block")
@@ -377,7 +380,8 @@ class ScoringEngine:
                         reason=f"Страна '{ipinfo_data.country}' в чёрном списке (IPinfo)",
                     ))
 
-            if ipinfo_data.city:
+            js_excluded_cities = [c.lower() for c in (app.excluded_cities if app else [])]
+            if ipinfo_data.city and ipinfo_data.city.lower() not in js_excluded_cities:
                 cities_list = lists_manager.get_list("cities_block")
                 if cities_list:
                     for c in cities_list.items:

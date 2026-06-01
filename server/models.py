@@ -61,6 +61,7 @@ class AppEntry(BaseModel):
     ] = "redirect_safe"
     panic_mode: bool = False
     excluded_countries: List[str] = []
+    excluded_cities: List[str] = []
     disable_lang_check: bool = False
     created_at: str = ""
 
@@ -69,9 +70,13 @@ class AppEntryCreate(BaseModel):
     name: str
     package_name: str
     cert_sha256: str = ""
+    gcp_project_id: str = ""
     safe_url: str = ""
     target_url: str = ""
     white_flow_type: str = "redirect_safe"
+    excluded_countries: List[str] = []
+    excluded_cities: List[str] = []
+    disable_lang_check: bool = False
 
 
 class ScoringDetail(BaseModel):

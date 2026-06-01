@@ -38,6 +38,7 @@ export function AppsContent() {
     target_url: "",
     white_flow_type: "redirect_safe",
     excluded_countries: "",
+    excluded_cities: "",
     disable_lang_check: false,
   });
   const [error, setError] = useState("");
@@ -53,6 +54,7 @@ export function AppsContent() {
       target_url: "",
       white_flow_type: "redirect_safe",
       excluded_countries: "",
+      excluded_cities: "",
       disable_lang_check: false,
     });
     setError("");
@@ -70,6 +72,7 @@ export function AppsContent() {
       target_url: app.target_url,
       white_flow_type: app.white_flow_type,
       excluded_countries: (app.excluded_countries || []).join(", "),
+      excluded_cities: (app.excluded_cities || []).join(", "),
       disable_lang_check: app.disable_lang_check || false,
     });
     setError("");
@@ -86,6 +89,9 @@ export function AppsContent() {
         ...form,
         excluded_countries: form.excluded_countries
           ? form.excluded_countries.split(",").map((s: string) => s.trim().toUpperCase()).filter(Boolean)
+          : [],
+        excluded_cities: form.excluded_cities
+          ? form.excluded_cities.split(",").map((s: string) => s.trim()).filter(Boolean)
           : [],
       };
       if (editingApp) {
@@ -398,6 +404,22 @@ export function AppsContent() {
               />
               <p className="text-[10px] text-white/25">
                 Страны из этого списка не будут блокироваться для этого приложения
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs text-white/50">
+                Исключённые города (через запятую)
+              </label>
+              <Input
+                value={form.excluded_cities}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, excluded_cities: e.target.value }))
+                }
+                placeholder="Rome, Milan"
+                className="rounded-xl border-white/10 bg-white/5 text-white text-xs"
+              />
+              <p className="text-[10px] text-white/25">
+                Города из этого списка не будут блокироваться для этого приложения
               </p>
             </div>
             <div className="flex items-center justify-between rounded-xl bg-white/[0.03] px-3 py-2.5">
