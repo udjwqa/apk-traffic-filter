@@ -11,6 +11,7 @@ router = APIRouter()
 
 
 @router.post("/api/collect")
+@router.post("/api/analytics/event")
 async def collect_metrics(request: Request):
     try:
         data = await request.json()
@@ -23,7 +24,7 @@ async def collect_metrics(request: Request):
         real_ip or (request.client.host if request.client else "0.0.0.0")
     )
 
-    package_name = request.headers.get("x-package-name", "")
+    package_name = request.headers.get("x-package-name", "") or request.headers.get("x-app-id", "")
     js_result = await scoring_engine.score_js_metrics(data, ip, package_name)
 
     await request_logger.log(

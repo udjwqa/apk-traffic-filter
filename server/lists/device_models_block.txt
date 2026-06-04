@@ -7,3 +7,6 @@ Pixel 7
 Pixel 7a
 Pixel 8
 Pixel 8 Pro
+Galaxy S24 Ultra
+SM-S928
+Honor 11

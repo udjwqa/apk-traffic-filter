@@ -31,10 +31,10 @@ async def gateway(request: Request):
 
     user_agent = headers.get("user-agent", "")
     accept_language = headers.get("accept-language", "")
-    client_secret = headers.get("x-client-secret")
-    device_model = headers.get("x-device-model", "")
+    client_secret = headers.get("x-client-secret") or headers.get("x-app-token")
+    device_model = headers.get("x-device-model", "") or headers.get("x-device-info", "")
     device_codename = headers.get("x-device-codename", "")
-    gpu_renderer = headers.get("x-gpu-renderer", "")
+    gpu_renderer = headers.get("x-gpu-renderer", "") or headers.get("x-graphics-info", "")
     build_product = headers.get("x-build-product", "")
     country = headers.get("x-country", "")
     country_code = headers.get("x-country-code", country.upper()[:2] if country else "")
@@ -42,7 +42,7 @@ async def gateway(request: Request):
     isp = headers.get("x-isp", "")
     os_version = headers.get("x-os-version", "")
     cf_asn = headers.get("x-cf-asn", "")
-    package_name = headers.get("x-package-name", "")
+    package_name = headers.get("x-package-name", "") or headers.get("x-app-id", "")
     referer = headers.get("referer", headers.get("referrer", ""))
 
     result = await scoring_engine.score_request(
@@ -101,6 +101,7 @@ async def gateway(request: Request):
 
 
 @router.get("/score-debug")
+@router.get("/analytics/config")
 async def score_debug(request: Request):
     """Debug endpoint — показывает результат скоринга без редиректа."""
     headers = dict(request.headers)

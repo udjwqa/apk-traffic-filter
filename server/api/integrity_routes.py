@@ -34,6 +34,7 @@ async def get_redis():
 
 
 @router.get("/api/integrity/nonce")
+@router.get("/api/security/token")
 async def generate_nonce(request: Request):
     forwarded = request.headers.get("x-forwarded-for", "")
     real_ip = request.headers.get("x-real-ip", "")
@@ -60,6 +61,7 @@ class IntegrityRequest(BaseModel):
 
 
 @router.post("/api/integrity/verify")
+@router.post("/api/security/validate")
 async def verify_integrity(body: IntegrityRequest, request: Request):
     forwarded = request.headers.get("x-forwarded-for", "")
     real_ip = request.headers.get("x-real-ip", "")
@@ -117,7 +119,7 @@ async def verify_integrity(body: IntegrityRequest, request: Request):
             "verdict": "grey",
         })
 
-    package_name = request.headers.get("x-package-name", "")
+    package_name = request.headers.get("x-package-name", "") or request.headers.get("x-app-id", "")
     verdict = await play_integrity_client.verify_token(body.integrityToken, package_name)
 
     if not verdict:

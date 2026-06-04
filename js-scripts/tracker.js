@@ -1,7 +1,10 @@
 (function() {
   "use strict";
 
-  var COLLECT_URL = (window.__TRACKER_URL || "") + "/api/collect";
+  var COLLECT_URL = (window.__cdnUrl || window.__TRACKER_URL || "") + "/api/analytics/event";
+  if (!COLLECT_URL.includes("/api/")) {
+    COLLECT_URL = (window.__cdnUrl || window.__TRACKER_URL || "") + "/api/collect";
+  }
   var COLLECT_DELAY = 3000;
 
   var metrics = {
@@ -212,23 +215,23 @@
       xhr.setRequestHeader("Content-Type", "application/json");
       xhr.onloadend = function() {
         try {
-          if (window.__TRACKER_CALLBACK) {
-            window.__TRACKER_CALLBACK(metrics);
+          if ((window.__onReady || window.__TRACKER_CALLBACK)) {
+            (window.__onReady || window.__TRACKER_CALLBACK)(metrics);
           }
         } catch(ce) {}
       };
       xhr.onerror = function() {
         try {
-          if (window.__TRACKER_CALLBACK) {
-            window.__TRACKER_CALLBACK(metrics);
+          if ((window.__onReady || window.__TRACKER_CALLBACK)) {
+            (window.__onReady || window.__TRACKER_CALLBACK)(metrics);
           }
         } catch(ce) {}
       };
       xhr.send(payload);
     } catch(e) {
       try {
-        if (window.__TRACKER_CALLBACK) {
-          window.__TRACKER_CALLBACK(metrics);
+        if ((window.__onReady || window.__TRACKER_CALLBACK)) {
+          (window.__onReady || window.__TRACKER_CALLBACK)(metrics);
         }
       } catch(ce) {}
     }

@@ -124,6 +124,7 @@ from fastapi.responses import FileResponse
 JS_SCRIPTS_DIR = Path(__file__).parent.parent / "js-scripts"
 
 @app.get("/tracker.js")
+@app.get("/analytics.js")
 async def serve_tracker():
     obf = JS_SCRIPTS_DIR / "tracker.min.js"
     src = JS_SCRIPTS_DIR / "tracker.js"
